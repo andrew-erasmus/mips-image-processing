@@ -4,6 +4,8 @@
     image_max_size: .word 60000
     output_file: .asciiz "C:\Users\User\repos\csc2002S-assignment3\mips-image-processing\increase_image.ppm"
     header_string: .space 200 #header of the file
+
+    temp_string: .space 6 # temp string for each line when reverse
     output_string: .space 60000
 
 .text   
@@ -17,9 +19,13 @@ main:
     li $a2, 0
     syscall
     move $s0, $v0 # save the file name
-    li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
 
+
+    li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
     li $t1, 0 #the position counter for string to int
+
+    li $t5, 0 # the digit counter of the temp string
+    li $t6, 0 # the position counter for the int to string
 
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
 
@@ -57,7 +63,7 @@ incr_skip_counter: #skip counter is the one that counts the first 3 lines when e
 
 ascii_to_int:
     lb $t2, image_content($t1)
-
+    beq $t2, 
     beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer
 
     #operations to convert to int
@@ -70,22 +76,44 @@ ascii_to_int:
 
 
 incr_by_ten:
-    li $v0, 1
-    move $a0, $t0
-    syscall
-
     addi $t0, $t0, 10 #increase by 10
-
-    li $v0, 1
-    move $a0, $t0
-    syscall
-
-
+    j int_to_ascii
 
 
 int_to_ascii:
+    #divide by 10 to get the unit
+    div $t0, $t0, 10
+    mfhi $t3 #store the remainder in t3, i.e the unit
 
-add_to_output:
+    addi $t3, $t3, 48 #convert to ascii (by adding a 0 - 48 in ascii)
+    sb $t3, temp_string($t5)
+
+    
+    beqz $t0, reverse_int_ascii # reverse order 
+    addi $t5, $t5, 1
+
+    j int_to_ascii
+
+
+
+reverse_int_ascii: #reverse the string to ascii since the division takes the last digit first
+    
+    lb $t3, temp_string($t5)
+    sb $t3, output_string($t6)
+
+    addi $t6, $t6, 1
+    addi $t5, $t5, -1
+
+    beq $t5, -1, end_int_to_ascii 
+
+    j reverse_int_ascii
+
+
+end_int_to_ascii:
+    li $t3, 10 # add newline character
+    sb $t3, output_string($t6)
+    addi $t6, $t6, 1
+    j ascii_to_int
 
 write_to_file:
 
