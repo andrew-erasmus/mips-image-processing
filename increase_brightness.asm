@@ -53,20 +53,35 @@ skip_three_lines:
 incr_skip_counter: #skip counter is the one that counts the first 3 lines when equals "\n"
     addi $t7, $t7, 1
     addi $t1, $t1, 1
-
-    li $v0, 1
-    move $a0, $t7
-    syscall
-
     j skip_three_lines
 
 ascii_to_int:
-    addi $t1, $t1, 1 # incr by one (currently on \n)
     lb $t2, image_content($t1)
 
+    beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer
+
+    #operations to convert to int
+    sub $t2, $t2, 48
+    mul $t0, $t0, 10
+    add $t0, $t0, $t2
+
+    addi $t1, $t1, 1 # incr by one (currently on \n)
+    j ascii_to_int
 
 
 incr_by_ten:
+    li $v0, 1
+    move $a0, $t0
+    syscall
+
+    addi $t0, $t0, 10 #increase by 10
+
+    li $v0, 1
+    move $a0, $t0
+    syscall
+
+
+
 
 int_to_ascii:
 
