@@ -3,7 +3,8 @@
     image_content: .space 60000 # reserve 60000 bytes for the image file
     image_max_size: .word 60000
     output_file: .asciiz "C:\Users\User\repos\csc2002S-assignment3\mips-image-processing\increase_image.ppm"
-    
+    header_string: .space 200 #header of the file
+    output_string: .space 60000
 
 .text   
 
@@ -16,41 +17,53 @@ main:
     li $a2, 0
     syscall
     move $s0, $v0 # save the file name
+    li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
+    li $t1, 0 #the position counter for string to int
+    li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
 
 
 read_file:
-    #open file
+    #read file
     li $v0, 14
     move $a0, $s0
     la $a1, image_content
     la $a2, 60000
     syscall
     
-    
-    li $v0, 4
-    la $a0, image_content
-    syscall
 
     #close file
     li $v0, 16
     move $a0, $s6
     syscall
 
-# Write to output file
-# output:
-#     li $v0, 13
-#     la $a0, output_file
-#     li $a1, 1
-#     li $a2, 0
-#     syscall
-#     move $s7, $v0 # The file
+    j ascii_to_int
 
-#     li $v0, 15
-#     move $a0, $s7
-#     la $a1, image_content
-#     lw $a2, image_max_size
-#     syscall
+skip_three_lines:
+    beq $t7, 3, ascii_to_int
+    beq $t2, 10, incr_skip_counter
+    lb $t2, image_content($t1)
+    j skip_three_lines
 
+
+incr_skip_counter: #skip counter is the one that counts the first 3 lines when equals "\n"
+    addi $t7, $t7, 1
+    j skip_three_lines
+
+ascii_to_int:
+    lb $t2, image_content($t1)
+
+    
+
+
+incr_by_ten:
+
+int_to_ascii:
+
+add_to_output:
+
+write_to_file:
+
+display_avgs:
 
 #exit the program
 exit:
