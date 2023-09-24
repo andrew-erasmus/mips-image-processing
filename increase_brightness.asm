@@ -18,7 +18,9 @@ main:
     syscall
     move $s0, $v0 # save the file name
     li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
+
     li $t1, 0 #the position counter for string to int
+
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
 
 
@@ -36,23 +38,32 @@ read_file:
     move $a0, $s6
     syscall
 
-    j ascii_to_int
+    j skip_three_lines
 
 skip_three_lines:
     beq $t7, 3, ascii_to_int
-    beq $t2, 10, incr_skip_counter
     lb $t2, image_content($t1)
+   
+    beq $t2, 10, incr_skip_counter
+    
+    addi $t1, $t1, 1
     j skip_three_lines
 
 
 incr_skip_counter: #skip counter is the one that counts the first 3 lines when equals "\n"
     addi $t7, $t7, 1
+    addi $t1, $t1, 1
+
+    li $v0, 1
+    move $a0, $t7
+    syscall
+
     j skip_three_lines
 
 ascii_to_int:
+    addi $t1, $t1, 1 # incr by one (currently on \n)
     lb $t2, image_content($t1)
 
-    
 
 
 incr_by_ten:
