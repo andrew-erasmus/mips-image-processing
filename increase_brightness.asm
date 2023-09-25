@@ -1,5 +1,6 @@
 .data
     image_filename: .asciiz "C:\Users\User\repos\csc2002S-assignment3\mips-image-processing\house_64_in_ascii_crlf.ppm"
+    image_content_count: .space 60000 #space for image content used for counting length
     image_content: .space 60000 # reserve 60000 bytes for the image file
     image_max_size: .word 60000
     output_file: .asciiz "C:\Users\User\repos\csc2002S-assignment3\mips-image-processing\increase_image.ppm"
@@ -23,12 +24,10 @@ main:
 
     li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
     li $t1, 0 #the position counter for string to int
-
+    li $t4, 0 #counter for the length of the values
     li $t5, 0 # the digit counter of the temp string
     li $t6, 0 # the position counter for the int to string
-
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
-
 
 read_file:
     #read file
@@ -41,7 +40,7 @@ read_file:
 
     #close file
     li $v0, 16
-    move $a0, $s6
+    move $a0, $s0
     syscall
 
     j skip_three_lines
@@ -61,9 +60,10 @@ incr_skip_counter: #skip counter is the one that counts the first 3 lines when e
     addi $t1, $t1, 1
     j skip_three_lines
 
+
 ascii_to_int:
+    # beq $t1, $t4, write_to_file
     lb $t2, image_content($t1)
-    beq $t2, 
     beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer
 
     #operations to convert to int
@@ -76,9 +76,16 @@ ascii_to_int:
 
 
 incr_by_ten:
+    
+    li $s7, 255
     addi $t0, $t0, 10 #increase by 10
+    bge $t0, $s7, skip_add_ten #skip increment by 10 if its at the 255 limit
     j int_to_ascii
 
+skip_add_ten:
+    li $t0, 255 #if will go over then set it to 255
+    j int_to_ascii
+    
 
 int_to_ascii:
     #divide by 10 to get the unit
@@ -113,9 +120,19 @@ end_int_to_ascii:
     li $t3, 10 # add newline character
     sb $t3, output_string($t6)
     addi $t6, $t6, 1
-    j ascii_to_int
+
+    # li $v0, 4
+    # la $a0, output_string
+    # syscall
+
+    li $t0, 0
+    addi $t1, $t1, 1
+
 
 write_to_file:
+    li $v0, 4
+    la $a0, output_string
+    syscall
 
 display_avgs:
 
@@ -124,3 +141,5 @@ exit:
 
     li $v0, 10
     syscall
+
+#TODO: END OF FILE IS NOT BREAKING PROPERLY, AND LENGTH COUNTER IS NOT WORKING CORRECTLY - POSSIBLY COUNT BUFFER STRING
