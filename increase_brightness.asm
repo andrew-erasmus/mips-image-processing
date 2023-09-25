@@ -49,6 +49,9 @@ skip_three_lines:
     beq $t7, 3, ascii_to_int
     lb $t2, image_content($t1)
    
+    sb $t2, output_string($t6) #will add to output string but skip over for brightness processing
+    addi $t6, $t6, 1
+
     beq $t2, 10, incr_skip_counter
     
     addi $t1, $t1, 1
@@ -56,6 +59,10 @@ skip_three_lines:
 
 
 incr_skip_counter: #skip counter is the one that counts the first 3 lines when equals "\n"
+    # li $t3, 10 # add newline character
+    # sb $t3, output_string($t6)
+    # addi $t6, $t6, 1
+
     addi $t7, $t7, 1
     addi $t1, $t1, 1
     j skip_three_lines
@@ -76,7 +83,6 @@ ascii_to_int:
 
 
 incr_by_ten:
-    
     li $s7, 255
     addi $t0, $t0, 10 #increase by 10
     bge $t0, $s7, skip_add_ten #skip increment by 10 if its at the 255 limit
