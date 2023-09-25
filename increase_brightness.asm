@@ -76,9 +76,10 @@ length_loop: #loop to count the length of the string
     j length_loop
 
 ascii_to_int:
+    
     beq $t1, $t4, write_to_file
     lb $t2, image_content($t1)
-    beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer
+    beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer 
 
     #operations to convert to int
     sub $t2, $t2, 48
@@ -134,19 +135,34 @@ end_int_to_ascii:
     sb $t3, output_string($t6)
     addi $t6, $t6, 1
 
-    # li $v0, 4
-    # la $a0, output_string
-    # syscall
-
     li $t0, 0
+    li $t5, 0
     addi $t1, $t1, 1
     j ascii_to_int
 
 
 write_to_file:
-    li $v0, 4
-    la $a0, output_string
+
+    li $v0, 13
+    la $a0, output_file
+    li $a1, 1
     syscall
+    move $s1, $v0
+
+
+    li $v0, 15
+    move $a0, $s1
+    la $a1, output_string
+    move $a2, $t4
+    syscall 
+
+     #close file
+    li $v0, 16
+    move $a0, $s7
+    syscall
+
+
+
 
 display_avgs:
 
@@ -155,3 +171,6 @@ exit:
 
     li $v0, 10
     syscall
+
+
+#TODO: FIX ERROR WHERE IT DOES NOT PROCESS THE WHOLE FILE - COULD BE A BYTE COUNTER ERROR WHERE DOES NOT COUNT THE \n OR COULD BE AN ERROR IN HOW IT INCREMENTS THE $t1?
