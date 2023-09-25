@@ -9,6 +9,9 @@
     temp_string: .space 6 # temp string for each line when reverse
     output_string: .space 60000
 
+    output_avg: .asciiz "Average pixel value of the original image:\n"
+    output_incr_avg: .asciiz "Average pixel value of new image::\n"
+
 .text   
 
 main:
@@ -31,6 +34,11 @@ main:
     li $t5, 0 # the digit counter of the temp string
     li $t6, 0 # the position counter for the int to string
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
+
+    li $t8, 0 #sum of the averages before increase
+    li $t9, 0 #sum of averages after increase
+
+    li $s5, 0 # counter for the number of lines
 
 read_file:
     #read file
@@ -69,15 +77,22 @@ incr_skip_counter: #skip counter is the one that counts the first 3 lines when e
 
 length_loop: #loop to count the length of the string
     lb $t2, image_content($t3)
+    beq $t2, 10, count_line
     beqz $t2, ascii_to_int
 
     addi $t4, $t4, 1
     addi $t3, $t3, 1
     j length_loop
 
+count_line:
+    addi $s0, $s0, 1
+    addi $t4, $t4, 1
+    addi $t3, $t3, 1
+    j length_loop
+
 ascii_to_int:
     
-    beq $t1, $t4, write_to_file
+    beq $t2, 10, check_end # Checks if it is a CR to then check if it is a LF
     lb $t2, image_content($t1)
     beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer 
 
@@ -89,15 +104,24 @@ ascii_to_int:
     addi $t1, $t1, 1 # incr by one (currently on \n)
     j ascii_to_int
 
-
+ check_end:
+     addi $t1, $t1, 1
+     lb $t2, image_content($t1)
+     beq $t2, 13, write_to_file
+     addi $t1, $t1, -1
+     j ascii_to_int
+    
 incr_by_ten:
+    add $t8, $t8, $t0 # add $t0 to the sum of the pixels
     li $s7, 255
     addi $t0, $t0, 10 #increase by 10
     bge $t0, $s7, skip_add_ten #skip increment by 10 if its at the 255 limit
+    add $t9, $t9, $t0 # add $t0 to the sum of the pixels after the increase
     j int_to_ascii
 
 skip_add_ten:
     li $t0, 255 #if will go over then set it to 255
+    add $t9, $t9, $t0 # add $t0 to the sum of the pixels after the increase
     j int_to_ascii
     
 
@@ -156,7 +180,7 @@ write_to_file:
     move $a2, $t4
     syscall 
 
-     #close file
+    #close file
     li $v0, 16
     move $a0, $s7
     syscall
@@ -165,6 +189,24 @@ write_to_file:
 
 
 display_avgs:
+    # Calculation for before the increase
+    # mtc1 $t8, $f0
+    # mtc1 $s0, $f2
+
+    # div.s $f4, $f0, $f2
+
+    # mov.s $f12, $f4
+
+    # la $a0, output_avg
+    # li $v0, 2
+    # syscall
+
+    # TODO Fix average calculation - the sum works
+
+    li $v0, 1
+    move $a0, $t8
+    syscall
+
 
 #exit the program
 exit:
@@ -173,4 +215,5 @@ exit:
     syscall
 
 
-#TODO: FIX ERROR WHERE IT DOES NOT PROCESS THE WHOLE FILE - COULD BE A BYTE COUNTER ERROR WHERE DOES NOT COUNT THE \n OR COULD BE AN ERROR IN HOW IT INCREMENTS THE $t1?
+# ! Find out why file ends in Nulls
+# TODO: Finish off with averages calculation when adding 10
