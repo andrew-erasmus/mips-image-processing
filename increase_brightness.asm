@@ -24,7 +24,10 @@ main:
 
     li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
     li $t1, 0 #the position counter for string to int
-    li $t4, 0 #counter for the length of the values
+
+    li $t3, 0 # current pos for length loop
+    li $t4, 0 # counter for the length of image content string
+
     li $t5, 0 # the digit counter of the temp string
     li $t6, 0 # the position counter for the int to string
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
@@ -46,12 +49,12 @@ read_file:
     j skip_three_lines
 
 skip_three_lines:
-    beq $t7, 3, ascii_to_int
+    beq $t7, 3, length_loop
     lb $t2, image_content($t1)
    
-    sb $t2, output_string($t6) #will add to output string but skip over for brightness processing
+    sb $t2, output_string($t6) # will add to output string but skip over for brightness processing
     addi $t6, $t6, 1
-
+    
     beq $t2, 10, incr_skip_counter
     
     addi $t1, $t1, 1
@@ -59,17 +62,21 @@ skip_three_lines:
 
 
 incr_skip_counter: #skip counter is the one that counts the first 3 lines when equals "\n"
-    # li $t3, 10 # add newline character
-    # sb $t3, output_string($t6)
-    # addi $t6, $t6, 1
 
     addi $t7, $t7, 1
     addi $t1, $t1, 1
     j skip_three_lines
 
+length_loop: #loop to count the length of the string
+    lb $t2, image_content($t3)
+    beqz $t2, ascii_to_int
+
+    addi $t4, $t4, 1
+    addi $t3, $t3, 1
+    j length_loop
 
 ascii_to_int:
-    # beq $t1, $t4, write_to_file
+    beq $t1, $t4, write_to_file
     lb $t2, image_content($t1)
     beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer
 
@@ -133,6 +140,7 @@ end_int_to_ascii:
 
     li $t0, 0
     addi $t1, $t1, 1
+    j ascii_to_int
 
 
 write_to_file:
@@ -147,5 +155,3 @@ exit:
 
     li $v0, 10
     syscall
-
-#TODO: END OF FILE IS NOT BREAKING PROPERLY, AND LENGTH COUNTER IS NOT WORKING CORRECTLY - POSSIBLY COUNT BUFFER STRING
