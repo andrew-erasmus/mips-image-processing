@@ -24,12 +24,18 @@ main:
     syscall
     move $s0, $v0 # save the file name
 
-
+    #open file for writing
+    li $v0, 13
+    la $a0, output_file
+    li $a1, 1
+    syscall
+    move $s1, $v0
+ 
     li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
     li $t1, 0 #the position counter for string to int
 
     li $t3, 0 # current pos for length loop
-    li $t4, 0 # counter for the length of image content string
+    li $t4, 0 # counter for the length of output_string
 
     li $t5, 0 # the digit counter of the temp string
     li $t6, 0 # the position counter for the int to string
@@ -38,7 +44,8 @@ main:
     li $t8, 0 #sum of the averages before increase
     li $t9, 0 #sum of averages after increase
 
-    li $s5, 0 # counter for the number of lines
+    li $s6, 0 #counter for output purposes
+
 
 read_file:
     #read file
@@ -57,7 +64,7 @@ read_file:
     j skip_three_lines
 
 skip_three_lines:
-    beq $t7, 3, length_loop
+    beq $t7, 3, ascii_to_int
     lb $t2, image_content($t1)
    
     sb $t2, output_string($t6) # will add to output string but skip over for brightness processing
@@ -75,20 +82,6 @@ incr_skip_counter: #skip counter is the one that counts the first 3 lines when e
     addi $t1, $t1, 1
     j skip_three_lines
 
-length_loop: #loop to count the length of the string
-    lb $t2, image_content($t3)
-    beq $t2, 10, count_line
-    beqz $t2, ascii_to_int
-
-    addi $t4, $t4, 1
-    addi $t3, $t3, 1
-    j length_loop
-
-count_line:
-    addi $s0, $s0, 1
-    addi $t4, $t4, 1
-    addi $t3, $t3, 1
-    j length_loop
 
 ascii_to_int:
     
@@ -105,11 +98,11 @@ ascii_to_int:
     j ascii_to_int
 
  check_end:
-     addi $t1, $t1, 1
-     lb $t2, image_content($t1)
-     beq $t2, 13, write_to_file
-     addi $t1, $t1, -1
-     j ascii_to_int
+    addi $t1, $t1, 1
+    lb $t2, image_content($t1)
+    beq $t2, 13, count_output_string
+    addi $t1, $t1, -1
+    j ascii_to_int
     
 incr_by_ten:
     add $t8, $t8, $t0 # add $t0 to the sum of the pixels
@@ -164,9 +157,24 @@ end_int_to_ascii:
     addi $t1, $t1, 1
     j ascii_to_int
 
+count_output_string:
+    lb $t2, output_string($s6)
+    beqz $t2, finish_off
+
+    addi $s6, $s6, 1
+    addi $t4, $t4, 1 
+    j count_output_string
+
+finish_off:
+    li $t2, 0 #counter for the position of the byte in the output
+    li $v0, 4
+    la $a0, output_string
+    syscall
+
+    j write_to_file
 
 write_to_file:
-
+    
     li $v0, 13
     la $a0, output_file
     li $a1, 1
@@ -187,25 +195,32 @@ write_to_file:
 
 
 
-
 display_avgs:
-    # Calculation for before the increase
-    # mtc1 $t8, $f0
-    # mtc1 $s0, $f2
+    
+    #close file
+    li $v0, 16
+    move $a0, $s7
+    syscall
 
+    # # Calculation for before the increase
+    # li $s4, 3133440
+    # li $s5, 1
+
+    # mul $s5, $s5, $s4
+
+    # mtc1 $t8, $f0
+    # mtc1 $s5, $f2
     # div.s $f4, $f0, $f2
 
     # mov.s $f12, $f4
 
-    # la $a0, output_avg
+    li $v0, 4
+    la $a0, output_avg
+    syscall
+
     # li $v0, 2
     # syscall
 
-    # TODO Fix average calculation - the sum works
-
-    li $v0, 1
-    move $a0, $t8
-    syscall
 
 
 #exit the program
@@ -215,5 +230,5 @@ exit:
     syscall
 
 
-# ! Find out why file ends in Nulls
-# TODO: Finish off with averages calculation when adding 10
+# ! Find out why file ends in Nulls - Count the length of the output string
+# TODO: Finish off with averages calculation when adding 10 - check
