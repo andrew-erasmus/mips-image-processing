@@ -10,7 +10,8 @@
     output_string: .space 60000
 
     output_avg: .asciiz "Average pixel value of the original image:\n"
-    output_incr_avg: .asciiz "Average pixel value of new image::\n"
+    output_incr_avg: .asciiz "Average pixel value of new image:\n"
+    newline: .asciiz "\n"
 
 .text   
 
@@ -167,10 +168,6 @@ count_output_string:
 
 finish_off:
     li $t2, 0 #counter for the position of the byte in the output
-    li $v0, 4
-    la $a0, output_string
-    syscall
-
     j write_to_file
 
 write_to_file:
@@ -202,24 +199,43 @@ display_avgs:
     move $a0, $s7
     syscall
 
-    # # Calculation for before the increase
-    # li $s4, 3133440
-    # li $s5, 1
+    # Calculation for before the increase
+    li $s4, 3133440
 
-    # mul $s5, $s5, $s4
+    # Floating point division for average before increase
+    mtc1 $t8, $f0      
+    mtc1 $s4, $f2
+    div.s $f4, $f0, $f2 
 
-    # mtc1 $t8, $f0
-    # mtc1 $s5, $f2
-    # div.s $f4, $f0, $f2
+    mov.s $f12, $f4
 
-    # mov.s $f12, $f4
 
     li $v0, 4
     la $a0, output_avg
     syscall
 
-    # li $v0, 2
-    # syscall
+    li $v0, 2
+    syscall
+
+    li $v0, 4
+    la $a0, newline
+    syscall
+
+    # Floating point division for average after increase
+    mtc1 $t9, $f0      
+    mtc1 $s4, $f2
+    div.s $f4, $f0, $f2 
+
+    mov.s $f12, $f4
+
+    li $v0, 4
+    la $a0, output_incr_avg
+    syscall
+
+    li $v0, 2
+    syscall
+
+
 
 
 
@@ -229,6 +245,3 @@ exit:
     li $v0, 10
     syscall
 
-
-# ! Find out why file ends in Nulls - Count the length of the output string
-# TODO: Finish off with averages calculation when adding 10 - check
