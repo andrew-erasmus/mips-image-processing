@@ -38,8 +38,8 @@ main:
     li $t6, 0 # the position counter for the int to string
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
 
-    li $t8, 0 #sum of the averages before increase
-    li $t9, 0 #sum of averages after increase
+    li $t8, 0 #Sum of the 3 pixel values
+    li $t9, 0 #counter for the number of pixels for greyscale calculation
 
     li $s6, 0 #counter for output purposes
 
@@ -94,7 +94,7 @@ ascii_to_int:
     
     beq $t2, 10, check_end # Checks if it is a CR to then check if it is a LF
     lb $t2, image_content($t1)
-    beq $t2, 10, incr_by_ten # if the line is finished, continue process of adding to the integer 
+    beq $t2, 10, add_to_sum # if the line is finished, continue process of adding to the integer 
 
     #operations to convert to int
     sub $t2, $t2, 48
@@ -111,19 +111,29 @@ ascii_to_int:
     addi $t1, $t1, -1
     j ascii_to_int
     
-incr_by_ten:
-    add $t8, $t8, $t0 # add $t0 to the sum of the pixels
-    li $s7, 255
-    addi $t0, $t0, 10 #increase by 10
-    bge $t0, $s7, skip_add_ten #skip increment by 10 if its at the 255 limit
-    add $t9, $t9, $t0 # add $t0 to the sum of the pixels after the increase
-    j int_to_ascii
 
-skip_add_ten:
-    li $t0, 255 #if will go over then set it to 255
-    add $t9, $t9, $t0 # add $t0 to the sum of the pixels after the increase
-    j int_to_ascii
+add_to_sum:
+    add $t8, $t8, $t0 #adds to sum of the 3
+    addi $t9, $t9, 1 #adds to counter - will break if equals 3
+    beq $t9, 3, calc_greyscale
+    addi $t1, $t1, 1 # moves onto the next number
+
+    li $t0, 0
+    j ascii_to_int
+
+calc_greyscale:
+    # Floating point division for greyscale calculation
     
+    mtc1 $t8, $f0      
+    mtc1 $t9, $f2
+    div.s $f4, $f0, $f2 
+    
+    cvt.w.s $f4, $f4   # Convert the floating-point value in $f4 to a 32-bit integer
+    mfc1 $t0, $f4
+    
+    li $t8, 0 #set both temporaries back to 0
+    li $t9, 0
+    j int_to_ascii
 
 int_to_ascii:
     #divide by 10 to get the unit
