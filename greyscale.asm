@@ -1,18 +1,19 @@
 .data
-    image_filename: .asciiz "C:\Users\User\repos\csc2002S-assignment3\mips-image-processing\house_64_in_ascii_crlf.ppm"
-    image_content_count: .space 60000 #space for image content used for counting length
-    image_content: .space 60000 # reserve 60000 bytes for the image file
-    image_max_size: .word 60000
-    output_file: .asciiz "C:\Users\User\repos\csc2002S-assignment3\mips-image-processing\increase_image.ppm"
+    image_filename: .asciiz "C:/Users/User/repos/csc2002S-assignment3/mips-image-processing/tree_64_in_ascii_crlf.ppm"
+    image_content_count: .space 80000 #space for image content used for counting length
+    image_content: .space 80000 # reserve 60000 bytes for the image file
+    image_max_size: .word 80000
+    output_file: .asciiz "C:/Users/User/repos/csc2002S-assignment3/mips-image-processing/increase_image.ppm"
     header_string: .space 200 #header of the file
 
-    temp_string: .space 6 # temp string for each line when reverse
-    output_string: .space 60000
+    temp_string: .space 4 # temp string for each line when reverse
+    output_string: .space 80000
+
+    error: .asciiz "Error: File could not be read"
 
 .text   
 
 main:
-
 #Input the file - load and read
     li $v0, 13
     la $a0, image_filename
@@ -27,7 +28,19 @@ main:
     li $a1, 1
     syscall
     move $s1, $v0
- 
+
+     bnez $v0, file_opened
+
+     li $v0, 4
+     la $a0, error
+     syscall
+
+     li $v0, 10
+     syscall
+    
+
+file_opened:
+
     li $t0, 0 #the number to be incremented - will be set to zero when a new number is read in
     li $t1, 0 #the position counter for string to int
 
@@ -38,20 +51,23 @@ main:
     li $t6, 0 # the position counter for the int to string
     li $t7, 0 #counter to skip first 3 lines - will increment if equals "\n"
 
-    li $t8, 0 #Sum of the 3 pixel values
-    li $t9, 0 #counter for the number of pixels for greyscale calculation
+    li $t8, 0 #sum of pixels
+    li $t9, 0 #sum of lines for avg
+
+    # li $s4, 1 #counter for the num 1
+    # li $s5, 0 #counter for the total
 
     li $s6, 0 #counter for output purposes
-
+    li $s3, 12292 
+    li $s2, 4 #counts the number of lines
 
 read_file:
     #read file
     li $v0, 14
     move $a0, $s0
     la $a1, image_content
-    la $a2, 60000
+    la $a2, 80000
     syscall
-    
 
     #close file
     li $v0, 16
@@ -61,38 +77,28 @@ read_file:
     j skip_three_lines
 
 skip_three_lines:
-    beq $t7, 3, ascii_to_int
+    
+    beq $t6, 15, ascii_to_int
     lb $t2, image_content($t1)
-
     beq $t2, 51, change_p3_to_p2 #checks if it is equal to '3'
-
+   
     sb $t2, output_string($t6) # will add to output string but skip over for brightness processing
+    
     addi $t6, $t6, 1
-    
-    beq $t2, 10, incr_skip_counter
-    
     addi $t1, $t1, 1
+    addi $t7, $t7, 1
     j skip_three_lines
 
 change_p3_to_p2:
     li $t2, 50
     sb $t2, output_string($t6) # will add to output string but skip over for brightness processing
     addi $t6, $t6, 1
-
     addi $t1, $t1, 1
     j skip_three_lines
 
-
-incr_skip_counter: #skip counter is the one that counts the first 3 lines when equals "\n"
-
-    addi $t7, $t7, 1
-    addi $t1, $t1, 1
-    j skip_three_lines
-
-
+ 
 ascii_to_int:
-    
-    beq $t2, 10, check_end # Checks if it is a CR to then check if it is a LF
+    beq $s2, $s3, count_output_string
     lb $t2, image_content($t1)
     beq $t2, 10, add_to_sum # if the line is finished, continue process of adding to the integer 
 
@@ -104,36 +110,25 @@ ascii_to_int:
     addi $t1, $t1, 1 # incr by one (currently on \n)
     j ascii_to_int
 
- check_end:
-    addi $t1, $t1, 1
-    lb $t2, image_content($t1)
-    beq $t2, 13, count_output_string
-    addi $t1, $t1, -1
-    j ascii_to_int
     
-
+    
 add_to_sum:
-    add $t8, $t8, $t0 #adds to sum of the 3
-    addi $t9, $t9, 1 #adds to counter - will break if equals 3
-    beq $t9, 3, calc_greyscale
-    addi $t1, $t1, 1 # moves onto the next number
-
+    add $t8, $t8, $t0
+    addi $s2, $s2, 1 #increase if a line is processed
+    addi $t9, $t9, 1
     li $t0, 0
+    beq $t9, 3, calc_greyscale
+    addi $t1, $t1, 1
+
     j ascii_to_int
 
 calc_greyscale:
-    # Floating point division for greyscale calculation
-    
-    mtc1 $t8, $f0      
-    mtc1 $t9, $f2
-    div.s $f4, $f0, $f2 
-    
-    cvt.w.s $f4, $f4   # Convert the floating-point value in $f4 to a 32-bit integer
-    mfc1 $t0, $f4
-    
+    div $t0, $t8, 3
+
     li $t8, 0 #set both temporaries back to 0
-    li $t9, 0
+    li $t9, 0    
     j int_to_ascii
+
 
 int_to_ascii:
     #divide by 10 to get the unit
@@ -169,7 +164,7 @@ end_int_to_ascii:
     sb $t3, output_string($t6)
     addi $t6, $t6, 1
 
-    li $t0, 0
+   # li $t0, 0
     li $t5, 0
     addi $t1, $t1, 1
     j ascii_to_int
@@ -205,6 +200,7 @@ write_to_file:
     li $v0, 16
     move $a0, $s7
     syscall
+
 
 #exit the program
 exit:
