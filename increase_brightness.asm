@@ -15,6 +15,9 @@
 
     error: .asciiz "Error: File could not be read"
 
+    average_before_incr: .double 0.0
+    average_after_incr: .double 0.0
+
 .text   
 
 main:
@@ -78,7 +81,7 @@ read_file:
     j skip_three_lines
 
 skip_three_lines:
-    #beq $t7, 3, ascii_to_int
+    
     beq $t6, 19, ascii_to_int
     lb $t2, image_content($t1)
    
@@ -86,7 +89,6 @@ skip_three_lines:
     
     addi $t6, $t6, 1
     
-    #beq $t2, 10, incr_skip_counter
     
     addi $t1, $t1, 1
     addi $t7, $t7, 1
@@ -115,12 +117,6 @@ ascii_to_int:
     addi $t1, $t1, 1 # incr by one (currently on \n)
     j ascii_to_int
 
-#  check_end:
-#     addi $t1, $t1, 1
-#     lb $t2, image_content($t1)
-#     beq $t2, 13, count_output_string
-#     addi $t1, $t1, -1
-#     j ascii_to_int
     
 incr_by_ten:
     add $t8, $t8, $t0 # add $t0 to the sum of the pixels
@@ -219,20 +215,24 @@ display_avgs:
 
     # Calculation for before the increase
     li $s4, 3133440
+    mtc1.d $s4, $f6
+    cvt.d.w $f6, $f6
 
     # Floating point division for average before increase
-    mtc1 $t8, $f0      
-    mtc1 $s4, $f2
-    div.s $f4, $f0, $f2 
-
-    mov.s $f12, $f4
-
+    mtc1.d $t8, $f4      
+    cvt.d.w $f4, $f4
+    
+   
+    div.d $f10, $f4, $f6 
+    s.d $f10, average_before_incr
+    mov.d $f12, $f10
 
     li $v0, 4
     la $a0, output_avg
     syscall
+    
 
-    li $v0, 2
+    li $v0, 3
     syscall
 
     li $v0, 4
@@ -240,17 +240,18 @@ display_avgs:
     syscall
 
     # Floating point division for average after increase
-    mtc1 $t9, $f0      
-    mtc1 $s4, $f2
-    div.s $f4, $f0, $f2 
+    mtc1.d $t9, $f2 
+    cvt.d.w $f2, $f2 
 
-    mov.s $f12, $f4
+    div.d $f10, $f2, $f6 
+    s.d $f10, average_after_incr
+    mov.d $f12, $f10
 
     li $v0, 4
     la $a0, output_incr_avg
     syscall
 
-    li $v0, 2
+    li $v0, 3
     syscall
 
 
