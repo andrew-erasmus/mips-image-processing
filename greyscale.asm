@@ -119,6 +119,7 @@ add_to_sum:
     li $t0, 0
     beq $t9, 3, calc_greyscale
     addi $t1, $t1, 1
+    # Works for the first couple thousand and then is slightly off - fix
 
     j ascii_to_int
 
